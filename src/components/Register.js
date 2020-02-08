@@ -15,11 +15,7 @@ export default Register = (props) => {
    const [secureTextEntry_confirm, setSecureTextEntry_confirm] = useState(true)
 
    const textInputChange = (value) => {
-      if (value.length !== 0) {
-         setCheck_textInputChange(true)
-      } else {
-         setCheck_textInputChange(false)
-      }
+      value.length !== 0 ? setCheck_textInputChange(true) : setCheck_textInputChange(false)
    }
 
    return (
@@ -60,7 +56,14 @@ export default Register = (props) => {
                   }
                </View>
                <Text style={[styles.text_footer, {
-                  marginTop: 20
+                  ...Platform.select({
+                     ios: {
+                        marginTop: 15
+                     },
+                     android: {
+                        marginTop: 10
+                     }
+                  })
                }]}>Password</Text>
                <View style={styles.action}>
                   <FontAwesome
@@ -92,7 +95,14 @@ export default Register = (props) => {
                   </TouchableOpacity>
                </View>
                <Text style={[styles.text_footer, {
-                  marginTop: 20
+                  ...Platform.select({
+                     ios: {
+                        marginTop: 15
+                     },
+                     android: {
+                        marginTop: 10
+                     }
+                  })
                }]}>Confirm Password</Text>
                <View style={styles.action}>
                   <FontAwesome
@@ -146,7 +156,8 @@ export default Register = (props) => {
 const styles = StyleSheet.create({
    container: {
       flex: 1,
-      backgroundColor: '#05375a'
+      backgroundColor: '#05375a',
+      justifyContent: 'center'
    },
    header: {
       flex: 1,
@@ -172,15 +183,19 @@ const styles = StyleSheet.create({
    },
    action: {
       flexDirection: 'row',
-      marginTop: 10,
       borderBottomWidth: 1,
-      borderBottomColor: '#f2f2f2',
-      paddingBottom: 5,
+      borderBottomColor: '#E8E8E8',
       alignItems: 'center',
+      ...Platform.select({
+         ios: {
+            marginTop: 15,
+            paddingBottom: 10,
+         }
+      })
    },
    textInput: {
       flex: 1,
-      paddingLeft: 10,
+      marginLeft: 10,
       color: '#05375a',
    },
    button: {
