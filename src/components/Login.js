@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, StatusBar, Image, Dimensions, TextInput, TouchableOpacity, Button, Alert, Platform, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, StatusBar, Image, Dimensions, TextInput, TouchableOpacity, Alert, Platform, ScrollView } from 'react-native';
+import AsyncStorage from '@react-native-community/async-storage'
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import Feather from 'react-native-vector-icons/Feather';
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import LinearGradient from 'react-native-linear-gradient';
 import * as Animatable from 'react-native-animatable';
@@ -22,44 +22,62 @@ const api = Platform.select({
 export default Login = (props) => {
    const [username, setUsername] = useState('')
    const [password, setPassword] = useState('')
-   const [biotmetric_type, setBiometric_type] = useState('fingerprint')
+   const [biotmetric_type, setBiometric_type] = useState('')
 
    const [secureTextEntry, setSecureTextEntry] = useState(true)
    const [check_textInputChange, setCheck_textInputChange] = useState(false)
    const [showSpinner, setShowSpinner] = useState(false)
 
+   const touchIDconfig = {
+      title: 'Authentication Required', // Android
+      imageColor: '#e00606', // Android
+      imageErrorColor: '#ff0000', // Android
+      sensorDescription: 'Touch sensor', // Android
+      sensorErrorDescription: 'Failed', // Android
+      cancelText: 'Cancel', // Android
+      fallbackLabel: 'Enter Password', // iOS (if empty, then label is hidden)
+      unifiedErrors: true, // use unified error messages (default false)
+      passcodeFallback: false, // iOS - allows the device to fall back to using the passcode, if faceid/touch is not available. this does not mean that if touchid/faceid fails the first few times it will revert to passcode, rather that if the former are not enrolled, then it will use the passcode.
+   };
+
    useEffect(() => {
-      TouchID.isSupported()
-         .then((biometryType) => {
-            setBiometric_type(biometryType)
+      TouchID.isSupported(touchIDconfig)
+         .then((biometry) => {
+            if (biometry === 'FaceID') {
+               setBiometric_type('face-recognition')
+            } else {
+               setBiometric_type('fingerprint')
+            }
          })
          .catch(error => {
-            console.log(`${error} - ${Platform.OS}`)
+            console.log(`${JSON.stringify(error)} - ${Platform.OS}`)
          })
-   });
+   }, []);
 
-   const biometricHandler = () => {
-      return (
-         Alert.alert(
-            'Facial Recognition',
-            '',
-            [
-               { text: 'OK', onPress: () => console.log('OK Pressed') },
-            ]
-         )
-      )
+   const biometricAuthentication = () => {
+      TouchID
+         .authenticate('Place your finger to sensor for verifcation', optionalConfigObject)
+         .then(() => {
+            setShowSpinner(true)
 
+            setInterval(() => {
+               setShowSpinner(false)
+               props.navigation.navigate('IndexScreen')
+            }, 1000);
+         })
+         .catch(error => {
+            console.log(JSON.stringify(error))
+         });
    }
 
    const submitHandler = () => {
-
       if (username === '' || password === '') {
          return (
             Alert.alert(
                'Login Failed',
                'Please input username and password',
                [
-                  { text: 'OK', onPress: () => console.log('OK Pressed') },
+                  { text: 'OK' },
                ]
             )
          )
@@ -75,28 +93,43 @@ export default Login = (props) => {
       Axios(options)
          .then((resp) => {
             console.log(resp.data)
+            if (resp.data.respcode === 0) {
+               AsyncStorage.setItem('USER_DATA', JSON.stringify(resp.data.respdata), () => {
+                  setShowSpinner(false)
+                  props.navigation.navigate('IndexScreen')
+               })
+            } else {
+               return (
+                  Alert.alert(
+                     'Login Failed',
+                     resp.data.respmsg,
+                     [
+                        { text: 'OK', onPress: () => setShowSpinner(false) },
+                     ])
+               )
+            }
+         })
+         .catch(e => {
+            console.log(e.message)
             return (
                Alert.alert(
-                  'Login Failed',
-                  'Please input username and password',
+                  'Something went wrong',
+                  'Service Temporarily Unavailable',
                   [
-                     { text: 'OK', onPress: () => console.log('OK Pressed') },
+                     { text: 'OK', onPress: () => setShowSpinner(false) },
                   ])
             )
          })
-         .catch(e => { console.log(e.message) })
-
    }
 
    const textInputChange = (value) => {
-      setUsername(value)
 
+      setUsername(value)
       value.length !== 0 ? setCheck_textInputChange(true) : setCheck_textInputChange(false)
 
    }
 
    return (
-
       <View style={styles.container}>
          <StatusBar barStyle='light-content' />
          <Spinner
@@ -188,24 +221,16 @@ export default Login = (props) => {
                      <Text style={{ color: '#009bd1', marginTop: 23 }}>Forgot Password</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                     onPress={biometricHandler}
+                     onPress={biometricAuthentication}
                   >
-                     {biotmetric_type === 'fingerprint' ?
-                        <MaterialIcons
-                           name='fingerprint'
-                           size={26}
-                           color='#009bd1'
-                           style={{ marginTop: 20 }}
-                        />
-                        :
+                     {biotmetric_type !== '' &&
                         <MaterialCommunityIcons
-                           name='face-recognition'
+                           name={biotmetric_type}
                            size={26}
                            color='#009bd1'
                            style={{ marginTop: 20 }}
                         />
                      }
-
                   </TouchableOpacity>
                </View>
                <View style={styles.button}>
@@ -257,7 +282,7 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       ...Platform.select({
          android: {
-            paddingVertical: 30
+            paddingVertical: 20
          }
       })
    },

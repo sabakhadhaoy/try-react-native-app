@@ -3,8 +3,16 @@ import { createStackNavigator } from 'react-navigation-stack';
 
 import Login from './components/Login';
 import Register from './components/Register';
+import Index from './components/Index';
 
 const StackNavigator = createStackNavigator({
+
+  IndexScreen: {
+    screen: Index,
+    navigationOptions: {
+      headerShown: false
+    }
+  },
   LoginScreen: {
     screen: Login,
     navigationOptions: {
@@ -16,7 +24,7 @@ const StackNavigator = createStackNavigator({
     navigationOptions: {
       headerShown: false
     }
-  }
+  },
 })
 
 export default createAppContainer(StackNavigator);
